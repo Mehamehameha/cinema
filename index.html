@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="cache-control" content="no-cache" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <title>Cinema Circle</title>
+    <link rel="stylesheet" href="styles.css?v=20260421-import-row" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Cinema Circle</p>
+        </div>
+        <div class="week-picker" aria-label="Planning week">
+          <button class="icon-button" id="prevWeek" type="button" aria-label="Previous week">‹</button>
+          <label>
+            <span id="weekLabel">Week starting</span>
+            <input id="weekStart" type="date" />
+          </label>
+          <button class="icon-button" id="nextWeek" type="button" aria-label="Next week">›</button>
+        </div>
+      </header>
+
+      <section class="quick-actions" aria-label="Dendy import">
+        <div>
+          <h2>Start here</h2>
+        </div>
+        <div class="import-row">
+          <button id="importDendy" class="primary-button" type="button">
+            Import Dendy this week (Thu-Wed)
+          </button>
+          <p id="importStatus" class="import-status" role="status"></p>
+        </div>
+      </section>
+
+      <section class="scoreboard" aria-label="Best plans">
+        <div class="scoreboard-header">
+          <div>
+            <h2>Best matches</h2>
+            <p>Sorted by friends who can attend and actually want to see it.</p>
+          </div>
+          <div class="button-row">
+            <button id="updateMatches" class="primary-button" type="button">Update matches</button>
+            <button id="resetDemo" class="ghost-button" type="button">Clear all</button>
+          </div>
+        </div>
+        <div id="matches" class="matches"></div>
+      </section>
+
+      <section class="workspace-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>People</h2>
+              <p>Mark your availability and preferences.</p>
+            </div>
+          </div>
+          <form id="friendForm" class="inline-form">
+            <label>
+              <span>Name</span>
+              <input id="friendName" required placeholder="Your name" />
+            </label>
+            <button class="primary-button" type="submit">Add</button>
+          </form>
+          <div id="friendList" class="friends"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Films</h2>
+              <p>Track what is currently playing and what leaves soon.</p>
+            </div>
+          </div>
+          <form id="filmForm" class="stacked-form">
+            <div class="field-row">
+              <label>
+                <span>Title</span>
+                <input id="filmTitle" required placeholder="e.g. Dune: Part Three" />
+              </label>
+              <label>
+                <span>Ends</span>
+                <input id="filmEnds" type="date" required />
+              </label>
+            </div>
+            <label>
+              <span>Vibe or note</span>
+              <input id="filmNote" placeholder="leaves Thursday, big screen preferred..." />
+            </label>
+            <button class="primary-button" type="submit">Add film</button>
+          </form>
+          <div id="filmList" class="list"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Sessions</h2>
+              <p>Add the showtimes worth considering this week.</p>
+            </div>
+          </div>
+          <form id="sessionForm" class="stacked-form">
+            <label>
+              <span>Film</span>
+              <select id="sessionFilm"></select>
+            </label>
+            <div class="field-row">
+              <label>
+                <span>Date</span>
+                <input id="sessionDate" type="date" required />
+              </label>
+              <label>
+                <span>Time</span>
+                <input id="sessionTime" type="time" required />
+              </label>
+            </div>
+            <button class="primary-button" type="submit">Add session</button>
+          </form>
+          <div id="sessionList" class="list"></div>
+        </div>
+      </section>
+    </main>
+
+    <template id="matchTemplate">
+      <article class="match-card">
+        <div class="match-time"></div>
+        <div class="match-main">
+          <h3></h3>
+          <p></p>
+          <div class="chips"></div>
+        </div>
+      </article>
+    </template>
+
+    <script src="app-config.js?v=20260421-import-row"></script>
+    <script src="app.js?v=20260421-import-row"></script>
+  </body>
+</html>
