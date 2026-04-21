@@ -287,10 +287,7 @@ function renderMatches() {
     return;
   }
 
-  const matches = weeklySessions()
-    .map(scoreSession)
-    .filter((match) => match.film && match.available.length)
-    .sort((a, b) => b.score - a.score || byDateTime(a.session, b.session));
+  const matches = exactMatches();
 
   if (matches.length) {
     renderExactMatches(matches);
@@ -346,7 +343,7 @@ function renderPotentialMatches(matches) {
     match.people.forEach((person) => {
       chips.append(chip(person.name, "good"));
     });
-    chips.append(chip("check session time", "muted"));
+    chips.append(chip("no exact session yet", "muted"));
     els.matches.append(card);
   });
 }
@@ -357,11 +354,14 @@ async function updateMatchesFromSchedule() {
     return;
   }
 
-  if (!weeklySessions().some((show) => show.source === "dendy")) {
-    await importDendySchedule({ renderAfter: false, quiet: true });
-  }
-
+  const checkedSchedule = await importDendySchedule({ renderAfter: false, quiet: false });
   renderMatches();
+
+  if (checkedSchedule && !exactMatches().length && buildPotentialMatches().length) {
+    setImportStatus(
+      "Dendy sessions were checked, but none exactly match the shared availability windows yet.",
+    );
+  }
 }
 
 async function importDendyShowtimes(options = {}) {
@@ -431,10 +431,12 @@ async function importDendySchedule(options = {}) {
     if (!quiet) {
       setImportStatus(`Checked ${dendySessions.length} dated Dendy sessions.`);
     }
+    return true;
   } catch (error) {
     if (!quiet) {
       setImportStatus(`Could not check Dendy sessions: ${error.message}`, true);
     }
+    return false;
   } finally {
     els.importDendy.disabled = false;
     els.updateMatches.disabled = false;
@@ -528,6 +530,13 @@ function scoreSession(show) {
 
   if (film && daysUntil(film.ends) <= 7) score += 1;
   return { session: show, film, slot, available, seenOrSkip, score };
+}
+
+function exactMatches() {
+  return weeklySessions()
+    .map(scoreSession)
+    .filter((match) => match.film && match.available.length)
+    .sort((a, b) => b.score - a.score || byDateTime(a.session, b.session));
 }
 
 function buildPotentialMatches() {
