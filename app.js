@@ -1,4 +1,5 @@
 const storageKey = "cinema-circle-state-v4";
+const activePersonKey = "cinema-circle-active-person-id";
 const remoteSaveDelay = 450;
 const dendyShowtimesUrl = "https://newtown.dendy.com.au/app-showtimes/";
 const dendySessionsProxy = "/.netlify/functions/dendy-sessions";
@@ -24,6 +25,7 @@ const starterState = () => {
 
 let state = loadState();
 let remoteSaveTimer = null;
+let activePersonId = localStorage.getItem(activePersonKey) || "";
 sanitizeImportedFilms();
 
 const els = {
@@ -49,6 +51,7 @@ const els = {
   sessionList: document.querySelector("#sessionList"),
   friendForm: document.querySelector("#friendForm"),
   friendName: document.querySelector("#friendName"),
+  activePerson: document.querySelector("#activePerson"),
   friendList: document.querySelector("#friendList"),
   matchTemplate: document.querySelector("#matchTemplate"),
 };
@@ -68,6 +71,10 @@ function wireEvents() {
   els.nextWeek.addEventListener("click", () => moveWeek(7));
   els.importDendy.addEventListener("click", importDendyShowtimes);
   els.updateMatches.addEventListener("click", updateMatchesFromSchedule);
+  els.activePerson.addEventListener("change", () => {
+    setActivePerson(els.activePerson.value);
+    render();
+  });
 
   els.resetDemo.addEventListener("click", () => {
     const confirmed = window.confirm(
@@ -106,7 +113,9 @@ function wireEvents() {
 
   els.friendForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    state.friends.push(friend(els.friendName.value.trim(), [], {}));
+    const newFriend = friend(els.friendName.value.trim(), [], {});
+    state.friends.push(newFriend);
+    setActivePerson(newFriend.id);
     els.friendForm.reset();
     saveAndRender();
   });
@@ -118,8 +127,31 @@ function render() {
   renderFilmSelect();
   renderFilms();
   renderSessions();
+  renderActivePersonSelect();
   renderFriends();
   renderMatches();
+}
+
+function renderActivePersonSelect() {
+  if (!state.friends.some((person) => person.id === activePersonId)) {
+    setActivePerson("");
+  }
+
+  els.activePerson.innerHTML = "";
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = state.friends.length ? "Choose your name" : "Add your name first";
+  els.activePerson.append(empty);
+
+  state.friends.forEach((person) => {
+    const option = document.createElement("option");
+    option.value = person.id;
+    option.textContent = person.name;
+    els.activePerson.append(option);
+  });
+
+  els.activePerson.value = activePersonId;
+  els.activePerson.disabled = !state.friends.length;
 }
 
 function renderFilmSelect() {
@@ -173,6 +205,10 @@ function renderFilms() {
     `;
     const button = deleteButton("Remove film");
     button.addEventListener("click", () => {
+      const confirmed = window.confirm(
+        `Remove "${film.title}"? This also removes everyone's preference for this film.`,
+      );
+      if (!confirmed) return;
       state.films = state.films.filter((candidate) => candidate.id !== film.id);
       state.sessions = state.sessions.filter((candidate) => candidate.filmId !== film.id);
       state.friends = state.friends.map((candidate) => {
@@ -223,17 +259,26 @@ function renderFriends() {
 
   state.friends.forEach((person) => {
     const card = document.createElement("article");
-    card.className = "friend-card";
+    const isEditable = person.id === activePersonId;
+    card.className = `friend-card ${isEditable ? "is-editable" : "is-locked"}`;
 
     const top = document.createElement("div");
     top.className = "friend-topline";
-    top.innerHTML = `<strong>${escapeHTML(person.name)}</strong>`;
-    const remove = deleteButton("Remove friend");
-    remove.addEventListener("click", () => {
-      state.friends = state.friends.filter((candidate) => candidate.id !== person.id);
-      saveAndRender();
-    });
-    top.append(remove);
+    top.innerHTML = `
+      <div>
+        <strong>${escapeHTML(person.name)}</strong>
+        <p class="edit-note">${isEditable ? "Editing on this device" : "View only"}</p>
+      </div>
+    `;
+    if (isEditable) {
+      const remove = deleteButton("Remove friend");
+      remove.addEventListener("click", () => {
+        state.friends = state.friends.filter((candidate) => candidate.id !== person.id);
+        setActivePerson("");
+        saveAndRender();
+      });
+      top.append(remove);
+    }
     card.append(top);
 
     card.append(sectionLabel("Availability"));
@@ -244,7 +289,9 @@ function renderFriends() {
       button.type = "button";
       button.className = `slot-toggle ${person.availability.includes(slot.key) ? "is-on" : ""}`;
       button.innerHTML = `<span>${slot.dateLabel}</span><strong>${slot.label}</strong>`;
+      button.disabled = !isEditable;
       button.addEventListener("click", () => {
+        if (!isEditable) return;
         toggle(person.availability, slot.key);
         saveAndRender();
       });
@@ -272,7 +319,9 @@ function renderFriends() {
         select.append(option);
       });
       select.value = person.preferences[film.id] || "skip";
+      select.disabled = !isEditable;
       select.addEventListener("change", () => {
+        if (!isEditable) return;
         person.preferences[film.id] = select.value;
         saveAndRender();
       });
@@ -622,6 +671,15 @@ function moveWeek(days) {
 function saveAndRender() {
   saveState();
   render();
+}
+
+function setActivePerson(id) {
+  activePersonId = id || "";
+  if (activePersonId) {
+    localStorage.setItem(activePersonKey, activePersonId);
+  } else {
+    localStorage.removeItem(activePersonKey);
+  }
 }
 
 function loadState() {

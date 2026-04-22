@@ -360,11 +360,16 @@ select:focus {
 }
 
 .stacked-form,
-.inline-form {
+.inline-form,
+.identity-row {
   display: grid;
   gap: 12px;
   padding: 18px;
   border-bottom: 1px solid var(--line);
+}
+
+.identity-row {
+  background: #fbfcfd;
 }
 
 .field-row {
@@ -419,6 +424,21 @@ select:focus {
   font-size: 1.02rem;
 }
 
+.edit-note {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.friend-card.is-editable {
+  box-shadow: inset 4px 0 0 var(--blue);
+}
+
+.friend-card.is-locked {
+  background: #fbfcfd;
+}
+
 .availability-grid,
 .preference-grid {
   display: grid;
@@ -456,6 +476,17 @@ select:focus {
   border-color: rgba(59, 128, 111, 0.42);
   color: #fff;
   background: var(--mint);
+}
+
+.slot-toggle:disabled,
+.preference-row select:disabled {
+  cursor: not-allowed;
+}
+
+.slot-toggle:disabled:not(.is-on),
+.preference-row select:disabled {
+  color: #858c98;
+  background: #f4f6f8;
 }
 
 .preference-grid {
