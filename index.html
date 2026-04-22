@@ -6,7 +6,7 @@
     <meta http-equiv="cache-control" content="no-cache" />
     <meta http-equiv="pragma" content="no-cache" />
     <title>Cinema Circle</title>
-    <link rel="stylesheet" href="styles.css?v=20260422-session-status" />
+    <link rel="stylesheet" href="styles.css?v=20260422-save-status" />
   </head>
   <body>
     <main class="app-shell">
@@ -33,6 +33,7 @@
             Import Dendy this week (Thu-Wed)
           </button>
           <p id="importStatus" class="import-status" role="status"></p>
+          <p id="syncStatus" class="import-status sync-status" role="status"></p>
         </div>
       </section>
 
@@ -44,7 +45,7 @@
           </div>
           <div class="button-row">
             <button id="updateMatches" class="primary-button" type="button">Update matches</button>
-            <button id="resetDemo" class="ghost-button" type="button">Clear all</button>
+            <button id="resetDemo" class="ghost-button" type="button">Reset shared week</button>
           </div>
         </div>
         <div id="matches" class="matches"></div>
@@ -135,7 +136,7 @@
       </article>
     </template>
 
-    <script src="app-config.js?v=20260422-session-status"></script>
-    <script src="app.js?v=20260422-session-status"></script>
+    <script src="app-config.js?v=20260422-save-status"></script>
+    <script src="app.js?v=20260422-save-status"></script>
   </body>
 </html>

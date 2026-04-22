@@ -259,6 +259,16 @@ select:focus {
   background: #fff6f5;
 }
 
+.sync-status {
+  color: var(--blue-ink);
+  background: var(--blue-soft);
+}
+
+.sync-status.is-error {
+  color: #9b2630;
+  background: #fff6f5;
+}
+
 .matches {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -24,7 +24,6 @@ const starterState = () => {
 
 let state = loadState();
 let remoteSaveTimer = null;
-let remoteReady = false;
 sanitizeImportedFilms();
 
 const els = {
@@ -36,6 +35,7 @@ const els = {
   updateMatches: document.querySelector("#updateMatches"),
   importDendy: document.querySelector("#importDendy"),
   importStatus: document.querySelector("#importStatus"),
+  syncStatus: document.querySelector("#syncStatus"),
   matches: document.querySelector("#matches"),
   filmForm: document.querySelector("#filmForm"),
   filmTitle: document.querySelector("#filmTitle"),
@@ -70,6 +70,10 @@ function wireEvents() {
   els.updateMatches.addEventListener("click", updateMatchesFromSchedule);
 
   els.resetDemo.addEventListener("click", () => {
+    const confirmed = window.confirm(
+      "Reset this shared cinema week for everyone? This clears all people, availability, preferences, films, and sessions for the selected week.",
+    );
+    if (!confirmed) return;
     localStorage.removeItem(storageKey);
     state = starterState();
     saveAndRender();
@@ -464,7 +468,14 @@ async function fetchDendyFilmList() {
 async function fetchDendyWeekSessions(weekStart) {
   const dates = Array.from({ length: 10 }, (_, index) => toISODate(addDays(weekStart, index)));
   const response = await fetch(`${dendySessionsProxy}?dates=${dates.join(",")}`);
-  if (!response.ok) throw new Error(`Dendy returned ${response.status}`);
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(
+        "the session checker was not found. Open the Netlify site, not the local 127.0.0.1 preview, and make sure netlify/functions/dendy-sessions.js is deployed.",
+      );
+    }
+    throw new Error(`the session checker returned ${response.status}`);
+  }
   const payload = await response.json();
   if (payload.error) throw new Error(payload.error);
   return payload.sessions || [];
@@ -630,20 +641,24 @@ function saveState() {
 
 async function loadRemoteWeekState(weekStart) {
   const config = supabaseConfig();
-  if (!config) return;
+  if (!config) {
+    setSyncStatus("Shared saving is not configured.", true);
+    return;
+  }
 
   try {
+    setSyncStatus("Loading shared week...");
     const response = await fetch(
       `${config.url}/rest/v1/cinema_planner_weeks?week_start=eq.${encodeURIComponent(weekStart)}&select=data`,
       {
         headers: supabaseHeaders(config),
       },
     );
-    if (!response.ok) throw new Error(`Supabase returned ${response.status}`);
+    if (!response.ok) throw new Error(await responseError(response, "Supabase load"));
 
     const rows = await response.json();
-    remoteReady = true;
     if (!rows.length) {
+      setSyncStatus("Shared saving ready.");
       queueRemoteSave();
       return;
     }
@@ -654,14 +669,17 @@ async function loadRemoteWeekState(weekStart) {
     });
     localStorage.setItem(storageKey, JSON.stringify(state));
     render();
+    setSyncStatus("Loaded shared preferences.");
   } catch (error) {
     console.warn("Could not load shared cinema week", error);
+    setSyncStatus(`Could not load shared preferences: ${error.message}`, true);
   }
 }
 
 function queueRemoteSave() {
   const config = supabaseConfig();
-  if (!config || !remoteReady) return;
+  if (!config) return;
+  setSyncStatus("Saving...");
   clearTimeout(remoteSaveTimer);
   remoteSaveTimer = setTimeout(() => saveRemoteState(config), remoteSaveDelay);
 }
@@ -680,10 +698,11 @@ async function saveRemoteState(config) {
         updated_at: new Date().toISOString(),
       }),
     });
-    if (!response.ok) throw new Error(`Supabase returned ${response.status}`);
-    remoteReady = true;
+    if (!response.ok) throw new Error(await responseError(response, "Supabase save"));
+    setSyncStatus("Saved.");
   } catch (error) {
     console.warn("Could not save shared cinema week", error);
+    setSyncStatus(`Could not save: ${error.message}`, true);
   }
 }
 
@@ -702,6 +721,24 @@ function supabaseHeaders(config) {
     authorization: `Bearer ${config.key}`,
     "content-type": "application/json",
   };
+}
+
+async function responseError(response, label) {
+  const details = await response.text();
+  if (!details) return `${label} returned ${response.status}`;
+  try {
+    const parsed = JSON.parse(details);
+    return `${label} returned ${response.status}: ${parsed.message || parsed.error || details}`;
+  } catch {
+    return `${label} returned ${response.status}: ${details}`;
+  }
+}
+
+function setSyncStatus(message, isError = false) {
+  if (!els.syncStatus) return;
+  els.syncStatus.textContent = message;
+  els.syncStatus.classList.toggle("is-visible", Boolean(message));
+  els.syncStatus.classList.toggle("is-error", isError);
 }
 
 function normalizeState(candidate) {
